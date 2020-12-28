@@ -17,23 +17,25 @@ var main = function() {
 
     /*========================= SHADERS ========================= */
 
-    /*jshint multistr: true */
-    let shader_vertex_source = "\n\
-    attribute vec2 position; //the position of the point\n\
-    \n\
-    \n\
-    void main(void) { //pre-built function\n\
-        gl_Position = vec4(position, 0., 1.);\n\
-    }";
+    let shader_vertex_source = `
+    attribute vec3 position;
+    attribute vec3 color;
 
+    varying vec3 vColor;
+    void main() {
+        gl_Position = vec4(position.x, position.y, position.z, 1.0);
+        vColor = color;
+    }
+    `;
 
-    let shader_fragment_source = "\n\
-    precision mediump float;\n\
-    \n\
-    \n\
-    void main(void) {\n\
-        gl_FragColor = vec4(1.0, 0.5, 0.5, 1.0);\n\
-    }";
+    let shader_fragment_source = `
+    precision mediump float;
+
+    varying vec3 vColor;
+    void main() {
+        gl_FragColor = vec4(vColor, 1.0);
+    }
+    `;
 
     /*================================================== */
 
@@ -61,27 +63,34 @@ var main = function() {
     GL.linkProgram(SHADER_PROGRAM);
 
     let _position = GL.getAttribLocation(SHADER_PROGRAM, "position");
+    let _color = GL.getAttribLocation(SHADER_PROGRAM, "color")
 
     GL.enableVertexAttribArray(_position);
+    GL.enableVertexAttribArray(_color);
     GL.useProgram(SHADER_PROGRAM);
 
     /*========================= THE TRIANGLE ========================= */
 
     //POINTS :
     let triangle_vertex = [
-        -1, -1,
-         1, -1,
-         1, 1,
+        -0.5, -0.5, 0.0,
+        0, 0, 1,
+        0.5, -0.5, 0.0,
+        1, 1, 0,
+        0.0, 0.5, 0.0,
+        1, 0, 0,
+        0.5, 0.5, 0.0,
+        0, 1, 0,
     ];
 
     let TRIANGLE_VERTEX = GL.createBuffer();
     GL.bindBuffer(GL.ARRAY_BUFFER, TRIANGLE_VERTEX);
     GL.bufferData(GL.ARRAY_BUFFER,
         new Float32Array(triangle_vertex),
-        GL.STATIC_DRAW);
+        GL.STATIC_DRAW /* the data is set only once and used many times.*/ );
 
     //FACES :
-    let triangle_faces = [0, 1, 2];
+    let triangle_faces = [0, 1, 2, 0, 2, 3];
 
     let TRIANGLE_FACES = GL.createBuffer();
     GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TRIANGLE_FACES);
@@ -98,15 +107,22 @@ var main = function() {
         GL.clear(GL.COLOR_BUFFER_BIT);
 
         GL.bindBuffer(GL.ARRAY_BUFFER, TRIANGLE_VERTEX);
-        GL.vertexAttribPointer(_position /*position of vertex attribute*/,
-             2 /*Size of vertex attribute (v2)*/,
-             GL.FLOAT /* Type of data */,
-             false /* Should the attributes be normalised*/,
-             4 * 2 /*Stride(Bytes) : 4 Bytes x 2 */,
-             0 /*Offset : 0 */);
+        GL.vertexAttribPointer(_position /*position of vertex attribute*/ ,
+            3 /*Size of vertex attribute (v3)*/ ,
+            GL.FLOAT /* Type of data */ ,
+            false /* Should the attributes be normalised*/ ,
+            4 * (3 + 3) /*Stride(Bytes) : 4 Bytes x 2 */ ,
+            0 /*Offset : 0 */ );
+
+        GL.vertexAttribPointer(_color /*position of vertex attribute*/ ,
+            3 /*Size of vertex attribute (v3)*/ ,
+            GL.FLOAT /* Type of data */ ,
+            false /* Should the attributes be normalised*/ ,
+            4 * (3 + 3) /*Stride(Bytes) : 4 Bytes x 2 */ ,
+            3 * 4 /*Offset : 0 */ );
 
         GL.bindBuffer(GL.ELEMENT_ARRAY_BUFFER, TRIANGLE_FACES);
-        GL.drawElements(GL.TRIANGLES, 3, GL.UNSIGNED_SHORT, 0);
+        GL.drawElements(GL.TRIANGLES, 6, GL.UNSIGNED_SHORT, 0);
         GL.flush();
 
         window.requestAnimationFrame(animate);
